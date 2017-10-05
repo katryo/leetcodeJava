@@ -3,144 +3,49 @@ package com.katryo;
 import java.util.*;
 
 public class Solution {
-    private HashMap<Integer, LinkedList<Integer>> nodes = new HashMap<Integer, LinkedList<Integer>>();
-    private HashSet<Node> explored = new HashSet<Node>();
-    private Node deepest;
-    private int[] edgeOfCycle = new int[2];
+    private static final int MAX_EDGES_COUNT = 1000;
+    private ArrayList<Integer>[] graph = new ArrayList[MAX_EDGES_COUNT];
+    private HashSet<Integer> explored = new HashSet<Integer>();
 
-    private void createAdjacentList(int[][] edges) {
-        for (int i = 0; i < edges.length; i++) {
-            addEdgesToAL(edges[i]);
+    public int[] findRedundantConnection(int[][] edges) {
+        for (int i = 0; i < MAX_EDGES_COUNT; i++) {
+           graph[i] = new ArrayList<Integer>();
         }
+        for (int[] edge : edges) {
+            if (doesEdgeCreateCycle(edge)) {
+                return edge;
+            } else {
+                addEdgeToGraph(edge);
+            }
+        }
+        throw new AssertionError();
+    }
+
+    private void addEdgeToGraph(int[] edge) {
+        graph[edge[0]].add(edge[1]);
+        graph[edge[1]].add(edge[0]);
+    }
+
+    private boolean doesEdgeCreateCycle(int[] edge) {
+        if (graph[edge[0]].isEmpty()) return false;
+        if (graph[edge[1]].isEmpty()) return false;
+
+        explored.clear();
+        return doesBFSReachesSeenNode(edge[0], edge[1]);
     }
 
     /**
-     *
-     * @param edge Example: [1, 4]
+     * Use BFS to detect if there is another path that connects the edge's head and tail.
      */
-    private void addEdgesToAL(int[] edge) {
-        addEdgeToAL(edge[0], edge[1]);
-        addEdgeToAL(edge[1], edge[0]);
-    }
-
-    private void addEdgeToAL(int head, int tail) {
-        LinkedList<Integer> node = nodes.get(head);
-        if (node == null) {
-            LinkedList newList = new LinkedList<Integer>();
-            newList.add(tail);
-            nodes.put(head, newList);
-        } else {
-            node.push(tail);
-        }
-    }
-
-    public int[] findRedundantConnection(int[][] edges) {
-        createAdjacentList(edges);
-        Node sourceNode = new Node(edges[0][0], 0, null);
-        try {
-            bsd(sourceNode, 1);
-        } catch (CycleFound e) {
-        }
-
-//        HashSet<HashSet<Integer>> resultEdges = new HashSet<HashSet<Integer>>();
-        ArrayList<Integer[]> resultEdges = new ArrayList<Integer[]>();
-        Node cycleNode = deepest.cycleChild;
-        Integer[] firstEdge = toEdgeIncreasingOrder(cycleNode.key, deepest.key);
-        resultEdges.add(firstEdge);
-
-        while (deepest.layer != cycleNode.layer) {
-            Integer[] result = toEdgeIncreasingOrder(deepest.key, deepest.parent.key);
-            resultEdges.add(result);
-            deepest = deepest.parent;
-        }
-
-        while (deepest.parent != cycleNode.parent) {
-            Integer[] result = toEdgeIncreasingOrder(deepest.key, deepest.parent.key);
-            resultEdges.add(result);
-            deepest = deepest.parent;
-
-            Integer[] resultCycleNode = toEdgeIncreasingOrder(cycleNode.key, cycleNode.parent.key);
-            resultEdges.add(resultCycleNode);
-            cycleNode = cycleNode.parent;
-        }
-
-        resultEdges.add(toEdgeIncreasingOrder(deepest.key, deepest.parent.key));
-        resultEdges.add(toEdgeIncreasingOrder(cycleNode.key, cycleNode.parent.key));
-
-
-
-        int answerIndex = edges.length;
-        for (int i = edges.length - 1; i > -1; i--) {
-            int[] edge = edges[i];
-            for (Integer[] resultEdge: resultEdges) {
-                if (resultEdge[0] == edge[0] && resultEdge[1] == edge[1]) {
-                    answerIndex = i;
-                    break;
-                }
-            }
-            if (answerIndex != edges.length) {
-                break;
+    private boolean doesBFSReachesSeenNode(int start, int goal) {
+        if (!explored.contains(start)) {
+            explored.add(start);
+            if (start == goal) return true;
+            for (int tail : graph[start]) {
+                if (doesBFSReachesSeenNode(tail, goal)) return true;
             }
         }
-
-        return edges[answerIndex];
-    }
-
-    private Integer[] toEdgeIncreasingOrder(int keyA, int keyB) {
-        Integer[] result = {Math.min(keyA, keyB), Math.max(keyA, keyB)};
-        return result;
-    }
-
-    private Node searchFromExplored(int key) {
-        for (Node n : explored) {
-            if (n.key == key) return n;
-        }
-        return null;
-    }
-
-    private Node bsd(Node parent, int layer) throws CycleFound {
-        LinkedList<Integer> tails =  nodes.get(parent.key);
-        for (int tail: tails) {
-            if (parent.parent != null && parent.parent.key == tail) continue;
-            Node exploredNode = searchFromExplored(tail);
-            if (exploredNode != null) {
-                System.out.println(exploredNode.key);
-                // head, tail is an edge consists of a cycle
-                parent.cycleChild = exploredNode;
-                deepest = parent;
-                throw new CycleFound();
-            } else {
-                Node child = new Node(tail, layer, parent);
-                parent.addChild(child);
-                explored.add(child);
-            }
-        }
-
-        for (Node child: parent.children) {
-            return bsd(child, layer + 1);
-        }
-        System.out.println("saa");
-        return null;
-    }
-
-    private class CycleFound extends RuntimeException {
-    }
-
-    private class Node {
-        private int key;
-        private int layer;
-        private LinkedList<Node> children;
-        private Node parent;
-        private Node cycleChild;
-        private Node(int key, int layer, Node parent) {
-            this.key = key;
-            this.layer = layer;
-            this.parent = parent;
-            this.children = new LinkedList<Node>();
-        }
-        private void addChild(Node child) {
-            this.children.push(child);
-        }
+        return false;
     }
 
     public static void main(String[] args) {
