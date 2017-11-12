@@ -1,70 +1,72 @@
+// https://leetcode.com/articles/longest-word-in-dictionary/
+
 import java.util.*;
 
 public class Solution {
     public String longestWord(String[] words) {
-        Trie trie = new Trie(words);
-        for (int i = 0; i < words.length; i++) {
-            trie.insert(words[i], i);
-        }
-        return trie.dfs();
+        Trie t = new Trie(words);
+        return t.dfs();
     }
 
-    class Node {
-        int indexForLastChar;
-        HashMap<Character, Node> children = new HashMap<>();
+    private class Node {
         char c;
-
+        HashMap<Character, Node> children = new HashMap<>();
+        int end = 0;
         Node(char c) {
             this.c = c;
         }
-        public String toString() {
-            return "" + c;
-        }
     }
 
-    class Trie {
-        Node root;
-        String[] words;
+    private class Trie {
+        private String[] words;
+        private Node root;
 
         Trie(String[] words) {
             this.words = words;
             root = new Node('0');
-        }
 
-        public void insert(String word, int index) {
-            Node cur = root;
-            for (char c: word.toCharArray()) {
-                cur.children.putIfAbsent(c, new Node(c));
-                cur = cur.children.get(c);
+            // Create a trie tree
+            for (int i = 0; i < words.length; i++) {
+                insert(words[i], i + 1);
             }
         }
 
-        private String dfs() {
-            String ans = "";
-            Stack<Node> stack = new Stack();
+        public String dfs() {
+            Stack<Node> stack = new Stack<>();
             stack.push(root);
-            while (!stack.empty()) {
-                Node node = stack.pop();
-                if (node.indexForLastChar > 0 || node == root) {
-                    if (node != root) {
-                        String word = words[node.indexForLastChar - 1];
-                        if (word.length() > ans.length() || (word.length() == ans.length() && word.compareTo(ans) < 0)) {
-                            ans = word;
-                        }
+
+            String ans = "";
+
+            while (!stack.isEmpty()) {
+                Node cur = stack.pop();
+                if (cur != root && cur.end != 0) {
+                    String word = words[cur.end - 1];
+                    if (ans.length() < word.length() || ans.length() == word.length() && word.compareTo(ans) < 0) {
+                        ans = word;
                     }
-                    for (Node nei: node.children.values()) {
-                        System.out.println(nei);
-                        stack.push(nei);
+                }
+                for (Node node: cur.children.values()) {
+                    if (node.end > 0) {
+                        stack.push(node);
                     }
                 }
             }
             return ans;
         }
+
+        private void insert(String word, int index) {
+            Node cur = root;
+            for (char c: word.toCharArray()) {
+                cur.children.putIfAbsent(c, new Node(c));
+                cur = cur.children.get(c);
+            }
+            cur.end = index;
+        }
     }
 
     public static void main(String[] args) {
         Solution s = new Solution();
-        String[] input = {"w", "wo", "wor", "worl", "world"};
+        String[] input = {"b", "banana", "ba", "ban", "app", "ap", "a"};
         System.out.println(s.longestWord(input));
     }
 }
