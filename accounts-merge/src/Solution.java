@@ -1,43 +1,89 @@
-import java.util.List;
-import java.util.LinkedList;
-import java.util.ListIterator;
+// https://leetcode.com/articles/accounts-merge/
+
+import java.util.*;
 
 public class Solution {
     public List<List<String>> accountsMerge(List<List<String>> accounts) {
-        ListIterator<List<String>> iter = accounts.listIterator();
-        while (iter.hasNext()) {
-            List<String> account = iter.next();
-            ListIterator<String> accountIter = account.listIterator();
-            String name = accountIter.next();
-            while (accountIter.hasNext()) {
-                String email = accountIter.next();
+        DSU dsu = new DSU(1001);
+
+        HashMap<String, Integer> emailToId = new HashMap<>();
+        HashMap<String, String> emailToName = new HashMap<>();
+
+        int id = 0;
+        for (List<String> account: accounts) {
+            boolean hasSeeName = false;
+            String name = "";
+
+            for (String emailOrName : account) {
+                if (!hasSeeName) {
+                    name = emailOrName;
+                    hasSeeName = true;
+                } else {
+                    emailToName.put(emailOrName, name);
+
+                    if (!emailToId.containsKey(emailOrName)) {
+                        emailToId.put(emailOrName, id);
+                        id++;
+                    }
+
+                    dsu.union(emailToId.get(account.get(1)), emailToId.get(emailOrName));
+                }
             }
         }
-        return accounts;
+
+
+        HashMap<Integer, List<String>> ans = new HashMap<>();
+
+        for (String email: emailToName.keySet()) {
+            int newId = dsu.find(emailToId.get(email));
+            ans.putIfAbsent(newId, new LinkedList<>());
+            ans.get(newId).add(email);
+        }
+
+        // Create ans, which is HashMap<Integer, List<String>> that is <ID, email>.
+
+        List<List<String>> finalAns = new LinkedList<>();
+        for (List<String> emails: ans.values()) {
+            Collections.sort(emails);
+            String name = emailToName.get(emails.get(0));
+            emails.add(0, name);
+            finalAns.add(emails);
+        }
+
+        return finalAns;
     }
 
-    private boolean conflicts(List<String> l, List<String> r) {
-        ListIterator<String> liter = l.listIterator();
-        String lname = liter.next();
+    class DSU {
+        int[] parent;
 
-        ListIterator<String> riter = r.listIterator();
-        String rname = riter.next();
-
-        if (lname != rname) {
-            return false;
-        }
-
-        while (liter.hasNext()) {
-            String sl = liter.next();
-            if (r.contains(sl)) {
-                return true;
+        DSU(int size) {
+            parent = new int[size];
+            for (int i = 0; i < parent.length; i++) {
+                parent[i] = i;
             }
         }
-        return false;
+
+        public int find(int x) {
+            if (parent[x] != x) {
+                parent[x] = find(parent[x]);
+            }
+            return parent[x];
+        }
+
+        public boolean union(int x, int y) {
+            int yr = find(y);
+            int xr = find(x);
+            if (yr == xr) {
+                return false;
+            }
+
+            parent[yr] = xr;
+            return true;
+        }
+
     }
 
     public static void main(String[] args) {
-        Solution s = new Solution();
         List<List<String>> inputs = new LinkedList<List<String>>();
         List<String> input = new LinkedList<String>();
         input.add("david");
@@ -49,6 +95,12 @@ public class Solution {
         input2.add("david");
         input2.add("a@email.com");
         inputs.add(input2);
+
+        List<String> input3 = new LinkedList<String>();
+        input3.add("jack");
+        input3.add("jack@email.com");
+        input3.add("jill@email.com");
+        inputs.add(input3);
 
         List<List<String>> result = s.accountsMerge(inputs);
         System.out.println(result);
