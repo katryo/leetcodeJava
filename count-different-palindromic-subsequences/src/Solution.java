@@ -38,7 +38,7 @@ public class Solution {
                 ArrayList<Integer> indexes = indexesBeforeJ(j, S);
                 int sum = 0;
                 for (Integer index: indexes) {
-                    sum += 
+                    sum +=
                 }
                 dp[i][j] = dp[i][j-1] +
             }

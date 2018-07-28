@@ -80,7 +80,6 @@ public class Solution {
             parent[yr] = xr;
             return true;
         }
-
     }
 
     public static void main(String[] args) {
